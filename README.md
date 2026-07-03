@@ -1,5 +1,7 @@
 # Spaosi Voice Translator
 
+[English version](README.en.md)
+
 Десктопное приложение для перевода живой речи в реальном времени.
 
 Приложение слушает системный звук или микрофон, распознаёт речь через Deepgram, переводит через Gemini API и показывает субтитры в оверлеях или OBS Browser Source.
@@ -12,7 +14,32 @@
 - Подсказка произношения для перевода с микрофона.
 - OBS widget для субтитров.
 - Локальное хранение ключей и настроек в `settings.local.json`.
-- Gemini proxy необязателен: можно оставить поле proxy пустым.
+- Работа с Gemini API напрямую или через optional proxy.
+- Сборка Windows `.exe` через PyInstaller.
+
+## Скриншоты
+
+Чтобы добавить скриншоты в README, положи изображения в папку:
+
+```text
+assets/screenshots/
+```
+
+Пример структуры:
+
+```text
+assets/screenshots/main-window.png
+assets/screenshots/settings.png
+assets/screenshots/obs-widget.png
+```
+
+После этого можно вставить изображения так:
+
+```markdown
+![Главное окно](assets/screenshots/main-window.png)
+![Настройки](assets/screenshots/settings.png)
+![OBS widget](assets/screenshots/obs-widget.png)
+```
 
 ## Технологии
 
@@ -24,6 +51,13 @@
 - keyboard
 - pytest
 - PyInstaller
+
+## Требования
+
+- Windows
+- Python 3.10+
+- Deepgram API key
+- Gemini API key
 
 ## Сборка EXE
 
@@ -58,6 +92,22 @@ dist\Spaosi Voice Translator\
 ```
 
 Не только `.exe`, потому что рядом лежат зависимости.
+
+## Иконка приложения
+
+Для кастомной иконки положи файл в корень проекта:
+
+```text
+icon.ico
+```
+
+Также поддерживается:
+
+```text
+icon.png
+```
+
+Если файл найден, сборщик добавит иконку в `.exe`.
 
 ## OBS
 
@@ -94,38 +144,18 @@ settings.local.json
 settings.example.json
 ```
 
-## Что можно удалить из GitHub-репозитория
-
-Можно удалить:
-
-```text
-run_windows.bat
-run_windows_hidden.vbs
-```
-
-`run_windows.bat` больше не нужен, если основной сценарий — сборка `.exe`.
-
-Также не нужно коммитить:
-
-```text
-.venv/
-.venv-build/
-build/
-dist/
-logs/
-__pycache__/
-*.pyc
-*.log
-settings.local.json
-settings.local.json.tmp
-.env
-.env.*
-*.spec
-```
-
-Эти файлы уже должны быть в `.gitignore`.
-
 ## Разработка
+
+Установка зависимостей для разработки:
+
+```bat
+py -3 -m venv .venv
+call .venv\Scripts\activate.bat
+python -m pip install --upgrade pip
+pip install -e .[dev]
+```
+
+Запуск тестов:
 
 ```bat
 pytest -q

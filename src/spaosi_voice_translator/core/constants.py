@@ -1,0 +1,5 @@
+APP_NAME = "Spaosi Voice Translator"
+APP_SUBTITLE = "Real-time voice translation"
+APP_VERSION = "0.3.0"
+APP_ORG = "spaosi"
+DEFAULT_SETTINGS_FILE = "settings.local.json"

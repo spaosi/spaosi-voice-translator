@@ -17,30 +17,6 @@
 - Работа с Gemini API напрямую или через optional proxy.
 - Сборка Windows `.exe` через PyInstaller.
 
-## Скриншоты
-
-Чтобы добавить скриншоты в README, положи изображения в папку:
-
-```text
-assets/screenshots/
-```
-
-Пример структуры:
-
-```text
-assets/screenshots/main-window.png
-assets/screenshots/settings.png
-assets/screenshots/obs-widget.png
-```
-
-После этого можно вставить изображения так:
-
-```markdown
-![Главное окно](assets/screenshots/main-window.png)
-![Настройки](assets/screenshots/settings.png)
-![OBS widget](assets/screenshots/obs-widget.png)
-```
-
 ## Технологии
 
 - Python

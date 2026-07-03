@@ -17,30 +17,6 @@ The app listens to system audio or microphone input, transcribes speech with Dee
 - Direct Gemini API support or optional Gemini proxy.
 - Windows `.exe` build through PyInstaller.
 
-## Screenshots
-
-To add screenshots to the README, put images into:
-
-```text
-assets/screenshots/
-```
-
-Example structure:
-
-```text
-assets/screenshots/main-window.png
-assets/screenshots/settings.png
-assets/screenshots/obs-widget.png
-```
-
-Then insert images like this:
-
-```markdown
-![Main window](assets/screenshots/main-window.png)
-![Settings](assets/screenshots/settings.png)
-![OBS widget](assets/screenshots/obs-widget.png)
-```
-
 ## Tech Stack
 
 - Python

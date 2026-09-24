@@ -12,6 +12,9 @@ from spaosi_voice_translator.services.translation.prompts import build_prompt
 
 
 DEFAULT_GEMINI_BASE_URL = "https://generativelanguage.googleapis.com"
+PRIMARY_GEMINI_MODEL = "gemini-3.5-flash-lite"
+FALLBACK_GEMINI_MODEL = "gemini-3.1-flash-lite"
+FALLBACK_COOLDOWN_SECONDS = 60
 
 
 class GeminiTranslator(QObject):
@@ -31,7 +34,8 @@ class GeminiTranslator(QObject):
         super().__init__()
         self.api_key = api_key
         self.proxy_url = self._normalize_proxy_url(proxy_url)
-        self.model_name = "gemini-3.1-flash-lite"
+        self.model_name = PRIMARY_GEMINI_MODEL
+        self._fallback_until = 0.0
         self.is_voice_mode = is_voice_mode
         self.is_auto_mic = is_auto_mic
         self.is_video_mode = is_video_mode
@@ -95,18 +99,21 @@ class GeminiTranslator(QObject):
     def _api_base_url(self) -> str:
         return self.proxy_url or DEFAULT_GEMINI_BASE_URL
 
-    def _build_request_url_and_headers(self) -> tuple[str, dict[str, str]]:
+    def _build_request_url_and_headers(
+        self, model_name: str | None = None
+    ) -> tuple[str, dict[str, str]]:
         base_url = self._api_base_url()
+        selected_model = model_name or self.model_name
         headers = {"Content-Type": "application/json"}
 
         if self.proxy_url:
             return (
-                f"{base_url}/v1beta/models/{self.model_name}:generateContent?key={self.api_key}",
+                f"{base_url}/v1beta/models/{selected_model}:generateContent?key={self.api_key}",
                 headers,
             )
 
         headers["x-goog-api-key"] = self.api_key
-        return f"{base_url}/v1beta/models/{self.model_name}:generateContent", headers
+        return f"{base_url}/v1beta/models/{selected_model}:generateContent", headers
 
     def _response_error_details(self, response) -> str:
         try:
@@ -247,25 +254,55 @@ class GeminiTranslator(QObject):
                 {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
             ]
 
-        url, headers = self._build_request_url_and_headers()
-
         started_at = time.perf_counter()
+        models_to_try = (
+            (self.model_name, FALLBACK_GEMINI_MODEL)
+            if time.monotonic() >= self._fallback_until
+            else (FALLBACK_GEMINI_MODEL,)
+        )
+        response = None
+        request_model = ""
 
-        try:
-            response = self._requests_session().post(
-                url,
-                headers=headers,
-                json=payload,
-                timeout=8 if self.is_video_mode else 6,
-            )
-        except Exception as exc:
-            self.log_line.emit(f"Ошибка Gemini[{self.name}]: запрос не удался: {exc}", "error")
-            return
+        for candidate_model in models_to_try:
+            if not self._is_generation_current(generation):
+                return
+
+            url, headers = self._build_request_url_and_headers(candidate_model)
+            try:
+                response = self._requests_session().post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=8 if self.is_video_mode else 6,
+                )
+            except Exception as exc:
+                self.log_line.emit(f"Ошибка Gemini[{self.name}]: запрос не удался: {exc}", "error")
+                return
+
+            if response.status_code == 503 and candidate_model == self.model_name:
+                self._fallback_until = time.monotonic() + FALLBACK_COOLDOWN_SECONDS
+                self.log_line.emit(
+                    f"Gemini[{self.name}]: {self.model_name} вернула 503; "
+                    f"переключение на {FALLBACK_GEMINI_MODEL} на 60 секунд",
+                    "system",
+                )
+                continue
+
+            request_model = candidate_model
+            break
 
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)
 
-        if not self._is_generation_current(generation):
+        if not self._is_generation_current(generation) or response is None:
             return
+
+        if response.status_code == 200 and request_model == self.model_name:
+            if self._fallback_until:
+                self.log_line.emit(
+                    f"Gemini[{self.name}]: основная модель {self.model_name} восстановлена",
+                    "system",
+                )
+                self._fallback_until = 0.0
 
         if response.status_code != 200:
             details = self._response_error_details(response)
